@@ -19,8 +19,11 @@ class RegisterRequest(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"ok": True}
+    return {"status": "ok"}
 
 @app.post("/auth/register")
-def register(body: RegisterRequest):
-    return {"ok": True, "user": {"name": body.name, "email": body.email}}
+def register(user: RegisterRequest):
+    return {
+        "message": "User registered successfully",
+        "user": user
+    }
