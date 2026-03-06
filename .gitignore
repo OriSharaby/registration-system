@@ -27,3 +27,5 @@ Thumbs.db
 
 .vscode/
 .idea/
+
+test_db.py
