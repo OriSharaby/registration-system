@@ -13,3 +13,4 @@ if not MONGODB_URI:
 client = MongoClient(MONGODB_URI)
 db = client[DB_NAME]
 users_col = db["users"]
+users_col.create_index("email", unique=True)

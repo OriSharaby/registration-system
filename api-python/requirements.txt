@@ -3,7 +3,7 @@ uvicorn
 gunicorn
 pymongo
 python-jose
-passlib[bcrypt]
+bcrypt
 python-dotenv
 httpx
 pydantic
