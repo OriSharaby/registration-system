@@ -3,16 +3,26 @@ load_dotenv()
 
 import os
 import httpx
-from fastapi import FastAPI
+from datetime import datetime, timedelta
+
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field
+from pymongo.errors import DuplicateKeyError
+from jose import jwt
+
+from db import users_col
+from auth_utils import hash_password, verify_password
 
 
 AI_SERVICE_URL = os.getenv("AI_SERVICE_URL", "http://127.0.0.1:4001/random-toast")
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 
-TIMEOUT = httpx.Timeout(connect=2.0, read=4.0, write=2.0, pool=2.0)
+SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
+TIMEOUT = httpx.Timeout(connect=2.0, read=4.0, write=2.0, pool=2.0)
 
 app = FastAPI()
 
@@ -35,7 +45,7 @@ class RegisterRequest(BaseModel):
 
 
 class UserPublic(BaseModel):
-    name: str = Field(min_length=2, max_length=50)
+    name: str
     email: EmailStr
 
 
@@ -44,6 +54,22 @@ class RegisterResponse(BaseModel):
     message: str
     user: UserPublic
     toast: str
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class LoginResponse(BaseModel):
+    ok: bool
+    token: str
+
+
+def create_access_token(data: dict) -> str:
+    payload = data.copy()
+    payload["exp"] = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 
 async def get_toast_message(
@@ -59,9 +85,6 @@ async def get_toast_message(
         if isinstance(msg, str) and msg.strip():
             return msg.strip()
 
-        if DEBUG:
-            print("[Python API] Invalid AI response payload:", data)
-
     except Exception as e:
         if DEBUG:
             print("[Python API] AI toast failed -> fallback:", repr(e))
@@ -76,6 +99,22 @@ def health():
 
 @app.post("/auth/register", response_model=RegisterResponse)
 async def register(user: RegisterRequest):
+    existing_user = users_col.find_one({"email": user.email})
+    if existing_user:
+        raise HTTPException(status_code=409, detail="Email already exists")
+
+    new_user = {
+        "name": user.name,
+        "email": user.email,
+        "password": hash_password(user.password),
+        "createdAt": datetime.utcnow(),
+    }
+
+    try:
+        users_col.insert_one(new_user)
+    except DuplicateKeyError:
+        raise HTTPException(status_code=409, detail="Email already exists")
+
     toast_message = await get_toast_message()
 
     return RegisterResponse(
@@ -83,4 +122,25 @@ async def register(user: RegisterRequest):
         message="User registered successfully",
         user=UserPublic(name=user.name, email=user.email),
         toast=toast_message,
+    )
+
+
+@app.post("/auth/login", response_model=LoginResponse)
+async def login(body: LoginRequest):
+    user = users_col.find_one({"email": body.email})
+
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    if not verify_password(body.password, user["password"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    token = create_access_token({
+        "sub": str(user["_id"]),
+        "email": user["email"]
+    })
+
+    return LoginResponse(
+        ok=True,
+        token=token
     )
