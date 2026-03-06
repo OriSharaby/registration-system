@@ -15,7 +15,7 @@ from db import users_col
 from auth_utils import hash_password, verify_password
 
 
-AI_SERVICE_URL = os.getenv("AI_SERVICE_URL", "http://127.0.0.1:4001/random-toast")
+AI_SERVICE_URL = os.getenv("AI_SERVICE_URL", "http://127.0.0.1:4001/api/ai/toast")
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 
 SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key")

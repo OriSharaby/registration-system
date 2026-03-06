@@ -87,7 +87,7 @@ app.get("/health", (req, res) => {
   res.json({ ok: true });
 });
 
-app.get("/random-toast", async (req, res) => {
+app.get("/api/ai/toast", async (req, res) => {
   const message = await generateToast();
   res.json({ message });
 });
