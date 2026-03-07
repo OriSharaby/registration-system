@@ -7,6 +7,9 @@ load_dotenv()
 MONGODB_URI = os.getenv("MONGODB_URI")
 DB_NAME = os.getenv("MONGODB_DB", "registration_db")
 
+print("DEBUG MONGODB_URI exists:", bool(os.getenv("MONGODB_URI")))
+print("DEBUG MONGODB_DB:", os.getenv("MONGODB_DB"))
+
 if not MONGODB_URI:
     raise RuntimeError("Missing MONGODB_URI in .env")
 
