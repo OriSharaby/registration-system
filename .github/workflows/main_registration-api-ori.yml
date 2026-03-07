@@ -33,7 +33,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     permissions:
-      id-token: write
       contents: read
 
     steps:
@@ -41,18 +40,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: python-app
-          path: .
-
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_4077BFB3F70B40BE9F4A3D62E1901D80 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0916AEA2C1144B649F42DE23B202871C }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_A7ABA7FBA3634C58880CD88534D59880 }}
+          path: ./api-python
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'registration-api'
-          slot-name: 'Production'
-          package: .
+          app-name: registration-api
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ./api-python
