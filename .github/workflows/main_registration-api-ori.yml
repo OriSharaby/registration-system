@@ -17,9 +17,10 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
-      - name: Create virtual environment
+      - name: Install dependencies
+        working-directory: api-python
         run: |
           python -m venv .venv
           source .venv/bin/activate
@@ -27,7 +28,8 @@ jobs:
           pip install -r requirements.txt
 
       - name: Zip artifact
-        run: zip -r release.zip . -x ".git/*" ".venv/*"
+        working-directory: api-python
+        run: zip -r ../release.zip . -x ".venv/*" "__pycache__/*" "*.pyc"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
