@@ -1,28 +1,8 @@
-from dotenv import load_dotenv
-load_dotenv()
-
-import os
-import httpx
-from datetime import datetime, timedelta
-
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, EmailStr, Field
-from pymongo.errors import DuplicateKeyError
-from jose import jwt
 
-from db import users_col
-from auth_utils import hash_password, verify_password
-
-
-AI_SERVICE_URL = os.getenv("AI_SERVICE_URL", "http://127.0.0.1:4001/api/ai/toast")
-DEBUG = os.getenv("DEBUG", "false").lower() == "true"
-
-SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
-
-TIMEOUT = httpx.Timeout(connect=2.0, read=4.0, write=2.0, pool=2.0)
+from routes.health_routes import router as health_router
+from routes.auth_routes import router as auth_router
 
 app = FastAPI()
 
@@ -37,110 +17,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-class RegisterRequest(BaseModel):
-    name: str = Field(min_length=2, max_length=50)
-    email: EmailStr
-    password: str = Field(min_length=6, max_length=128)
-
-
-class UserPublic(BaseModel):
-    name: str
-    email: EmailStr
-
-
-class RegisterResponse(BaseModel):
-    ok: bool
-    message: str
-    user: UserPublic
-    toast: str
-
-
-class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str
-
-
-class LoginResponse(BaseModel):
-    ok: bool
-    token: str
-
-
-def create_access_token(data: dict) -> str:
-    payload = data.copy()
-    payload["exp"] = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
-
-
-async def get_toast_message(
-    fallback: str = "You have successfully registered!",
-) -> str:
-    try:
-        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-            resp = await client.get(AI_SERVICE_URL)
-            resp.raise_for_status()
-            data = resp.json()
-
-        msg = data.get("message") if isinstance(data, dict) else None
-        if isinstance(msg, str) and msg.strip():
-            return msg.strip()
-
-    except Exception as e:
-        if DEBUG:
-            print("[Python API] AI toast failed -> fallback:", repr(e))
-
-    return fallback
-
-
-@app.get("/health")
-def health():
-    return {"status": "ok"}
-
-
-@app.post("/auth/register", response_model=RegisterResponse)
-async def register(user: RegisterRequest):
-    existing_user = users_col.find_one({"email": user.email})
-    if existing_user:
-        raise HTTPException(status_code=409, detail="Email already exists")
-
-    new_user = {
-        "name": user.name,
-        "email": user.email,
-        "password": hash_password(user.password),
-        "createdAt": datetime.utcnow(),
-    }
-
-    try:
-        users_col.insert_one(new_user)
-    except DuplicateKeyError:
-        raise HTTPException(status_code=409, detail="Email already exists")
-
-    toast_message = await get_toast_message()
-
-    return RegisterResponse(
-        ok=True,
-        message="User registered successfully",
-        user=UserPublic(name=user.name, email=user.email),
-        toast=toast_message,
-    )
-
-
-@app.post("/auth/login", response_model=LoginResponse)
-async def login(body: LoginRequest):
-    user = users_col.find_one({"email": body.email})
-
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-
-    if not verify_password(body.password, user["password"]):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-
-    token = create_access_token({
-        "sub": str(user["_id"]),
-        "email": user["email"]
-    })
-
-    return LoginResponse(
-        ok=True,
-        token=token
-    )
+app.include_router(health_router)
+app.include_router(auth_router)
