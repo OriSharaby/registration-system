@@ -1,11 +1,16 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { FaEnvelope, FaLock, FaEye, FaEyeSlash, FaFacebook } from "react-icons/fa";
 import "../styles/auth.css";
-import { FcGoogle } from "react-icons/fc";
+import googleIcon from "../assets/Google.png";
+import facebookIcon from "../assets/Facebook.png";
+import illustration from "../assets/Illustration.png";
+import logo from "../assets/Logo.png";
+import emailIcon from "../assets/email-icon.png";
+import lockIcon from "../assets/lock-icon.png";
+import eyeIcon from "../assets/eye-icon.png";
 
-type LoginState = {
+type LoginFormState = {
   email: string;
   password: string;
 };
@@ -13,142 +18,161 @@ type LoginState = {
 export default function LoginPage() {
   const navigate = useNavigate();
 
-  const [data, setData] = useState<LoginState>({ email: "", password: "" });
-  const [show, setShow] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [formData, setFormData] = useState<LoginFormState>({
+    email: "",
+    password: "",
+  });
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setData((p) => ({ ...p, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!data.email || !data.password) {
+    if (!formData.email || !formData.password) {
       toast.error("Please fill in all fields");
       return;
     }
 
-    setBusy(true);
+    setIsSubmitting(true);
+
     try {
-      // TODO: פה נחבר את ה-API שלך
       toast.success("Login successful!");
-      setTimeout(() => navigate("/register"), 700); // סתם דוגמה לניווט
+      setTimeout(() => navigate("/register"), 700);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Login failed";
-      toast.error(msg);
+      const message = err instanceof Error ? err.message : "Login failed";
+      toast.error(message);
     } finally {
-      setBusy(false);
+      setIsSubmitting(false);
     }
   };
 
-  const social = (provider: string) => {
+  const handleSocialLoginClick = (provider: string) => {
     toast.info(`${provider} login coming soon!`);
   };
 
   return (
-    <div className="authPage">
-      <div className="authCard">
-        {/* LEFT */}
-        <section className="authLeft">
-          <div className="brand">
-            <div className="brandBox">S</div>
+    <main className="auth-layout">
+      <div className="auth-shell">
+        <section className="auth-hero" aria-label="Welcome section">
+          <div className="auth-hero__brand">
+            <img src={logo} alt="Company logo" className="auth-hero__logo" />
           </div>
 
-          <div className="leftCenter">
-            {/* כרגע placeholder לאיור. בהמשך נחבר תמונה מה-assets */}
-            <div className="illuFrame">
-              <div className="illuCircle" />
+          <div className="auth-hero__content">
+            <div className="auth-hero__illustration-wrapper">
+              <img
+                src={illustration}
+                alt="Welcome illustration"
+                className="auth-hero__illustration"
+              />
             </div>
-          </div>
 
-          <div className="leftText">
-            <h2>Welcome aboard my friend</h2>
-            <p>just a couple of clicks and we start</p>
+            <div className="auth-hero__text">
+              <h2 className="auth-hero__title">Welcome aboard my friend</h2>
+              <p className="auth-hero__subtitle">
+                just a couple of clicks and we start
+              </p>
+            </div>
           </div>
         </section>
 
-        {/* RIGHT */}
-        <section className="authRight">
-          <div className="rightInner">
-            <h1 className="title">Log in</h1>
+        <section className="auth-panel" aria-label="Login form section">
+          <div className="auth-panel__content">
+            <h1 className="auth-panel__title">Log in</h1>
 
-            <form className="form" onSubmit={onSubmit}>
-              <label className="field">
-                <span className="icon">
-                  <FaEnvelope />
+            <form className="auth-form" onSubmit={handleSubmit}>
+              <label className="auth-form__field">
+                <span className="auth-form__icon">
+                  <img src={emailIcon} alt="email icon" className="auth-form__icon-img" />
                 </span>
                 <input
-                  className="input"
+                  className="auth-form__input"
                   type="email"
                   name="email"
                   placeholder="Email"
-                  value={data.email}
-                  onChange={onChange}
+                  value={formData.email}
+                  onChange={handleInputChange}
                   autoComplete="email"
                 />
               </label>
 
-              <label className="field">
-                <span className="icon">
-                  <FaLock />
+              <label className="auth-form__field">
+                <span className="auth-form__icon">
+                  <img src={lockIcon} alt="lock icon" className="auth-form__icon-img" />
                 </span>
                 <input
-                  className="input"
-                  type={show ? "text" : "password"}
+                  className="auth-form__input"
+                  type={isPasswordVisible ? "text" : "password"}
                   name="password"
                   placeholder="Password"
-                  value={data.password}
-                  onChange={onChange}
+                  value={formData.password}
+                  onChange={handleInputChange}
                   autoComplete="current-password"
                 />
                 <button
                   type="button"
-                  className="eye"
-                  onClick={() => setShow((v) => !v)}
-                  aria-label="Toggle password"
+                  className="auth-form__password-toggle"
+                  onClick={() => setIsPasswordVisible((prev) => !prev)}
+                  aria-label="Toggle password visibility"
                 >
-                  {show ? <FaEyeSlash /> : <FaEye />}
-                </button>
+                  <img
+                    src={eyeIcon}
+                    alt="toggle password visibility"
+                    className="auth-form__icon-img"
+                  />                </button>
               </label>
 
-              <div className="forgot">
+              <div className="auth-form__forgot-password">
                 <a href="#">Forgot password?</a>
               </div>
 
-              <button className="primary" disabled={busy}>
-                {busy ? "Logging in..." : "Log in"}
+              <button className="auth-form__submit-button" disabled={isSubmitting}>
+                {isSubmitting ? "Logging in..." : "Log in"}
               </button>
 
-              <div className="divider">
+              <div className="auth-form__divider">
                 <span />
                 <b>Or</b>
                 <span />
               </div>
 
-              <div className="socialRow">
+              <div className="auth-form__socials">
                 <button
                   type="button"
-                  className="social"
-                  onClick={() => social("Google")}
+                  // disabled={}
+                  className="auth-form__social-button"
+                  onClick={() => handleSocialLoginClick("Google")}
                 >
-                  <FcGoogle size={18} />
+                  <img
+                    src={googleIcon}
+                    alt="Google"
+                    className="auth-form__social-icon"
+                  />
                   Google
                 </button>
+
                 <button
                   type="button"
-                  className="social"
-                  onClick={() => social("Facebook")}
+                  className="auth-form__social-button"
+                  onClick={() => handleSocialLoginClick("Facebook")}
                 >
-                  <FaFacebook size={18} color="#1877F2" />
+                  <img
+                    src={facebookIcon}
+                    alt="Facebook"
+                    className="auth-form__social-icon"
+                  />
                   Facebook
                 </button>
               </div>
 
-              <div className="bottom">
-                <div className="muted">Have no account yet?</div>
-                <Link className="secondary" to="/register">
+              <div className="auth-form__footer">
+                <div className="auth-form__footer-text">Have no account yet?</div>
+                <Link className="auth-form__register-link" to="/register">
                   Register
                 </Link>
               </div>
@@ -156,6 +180,6 @@ export default function LoginPage() {
           </div>
         </section>
       </div>
-    </div>
+    </main>
   );
 }
