@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import "../styles/auth.css";
+import { loginUser } from "../services/authApi";
 
 import AuthLayout from "../components/auth/AuthLayout";
 import AuthHero from "../components/auth/AuthHero";
@@ -49,8 +50,17 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      toast.success("Login successful!");
-      setTimeout(() => navigate("/register"), 700);
+      const result = await loginUser({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (result.token) {
+        localStorage.setItem("token", result.token);
+      }
+
+      toast.success(result.message || "Login successful!");
+      navigate("/");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Login failed";
       toast.error(message);

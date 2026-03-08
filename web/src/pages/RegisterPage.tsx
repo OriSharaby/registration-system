@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import "../styles/auth.css";
+import { registerUser } from "../services/authApi";
 
 import AuthLayout from "../components/auth/AuthLayout";
 import AuthHero from "../components/auth/AuthHero";
@@ -56,8 +57,21 @@ export default function RegisterPage() {
     setIsSubmitting(true);
 
     try {
-      toast.success("Registration successful!");
-      setTimeout(() => navigate("/login"), 700);
+      const result = await registerUser({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+      });
+
+      console.log("after registerUser", result);
+
+
+      if (result.token) {
+        localStorage.setItem("token", result.token);
+      }
+
+      toast.success(result.toast || result.message || "Registration successful!");
+      navigate("/login");
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Registration failed";
@@ -66,7 +80,7 @@ export default function RegisterPage() {
       setIsSubmitting(false);
     }
   };
-  
+
   const handleSocialLoginClick = (provider: string) => {
     toast.info(`${provider} signup coming soon!`);
   };
