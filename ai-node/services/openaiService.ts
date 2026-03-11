@@ -48,6 +48,7 @@ export async function generateToast(): Promise<string> {
   try {
     const response = await client.responses.create({
       model: MODEL,
+      temperature: 0.2,
       input:
         "Generate a very short friendly registration toast in English (max 10 words) and add one emoji.",
     });
@@ -84,6 +85,7 @@ export async function generateChatReply(
 
     const response = await client.responses.create({
       model: MODEL,
+      temperature: 0.2,
       input,
     });
 

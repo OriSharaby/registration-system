@@ -34,6 +34,7 @@ async function startServer(): Promise<void> {
   try {
     await mongoose.connect(MONGODB_URI!);
     console.log("[AI Service] Connected to MongoDB");
+    console.log("[AI Service] Mongo DB name:", mongoose.connection.name);
 
     app.listen(PORT, () => {
       console.log(`[AI Service] Running on http://localhost:${PORT}`);
