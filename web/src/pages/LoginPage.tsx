@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, type SyntheticEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import "../styles/auth.css";
@@ -37,7 +37,7 @@ export default function LoginPage() {
 
   const isFormInvalid = !formData.email.trim() || !formData.password.trim();
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (isSubmitting) return;
@@ -60,7 +60,7 @@ export default function LoginPage() {
       }
 
       toast.success(result.message || "Login successful!");
-      navigate("/");
+      navigate("/chat");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Login failed";
       toast.error(message);
@@ -72,7 +72,6 @@ export default function LoginPage() {
   const handleSocialLoginClick = (provider: string) => {
     toast.info(`${provider} login coming soon!`);
   };
-
 
   return (
     <AuthLayout

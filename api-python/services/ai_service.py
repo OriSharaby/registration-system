@@ -1,6 +1,6 @@
 import httpx
 
-from core.config import AI_SERVICE_URL, DEBUG, TIMEOUT
+from core.config import AI_SERVICE_URL, TIMEOUT
 
 
 async def get_toast_message(
@@ -17,7 +17,6 @@ async def get_toast_message(
             return msg.strip()
 
     except Exception as e:
-        if DEBUG:
             print("[Python API] AI toast failed -> fallback:", repr(e))
 
     return fallback

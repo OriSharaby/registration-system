@@ -69,7 +69,7 @@ export default function LoginScreen({ navigation }: Props) {
         text1: result.message || "Login successful!",
       });
 
-      navigation.navigate("Register");
+      navigation.navigate("Chat");
     } catch (err: any) {
       Toast.show({
         type: "error",
