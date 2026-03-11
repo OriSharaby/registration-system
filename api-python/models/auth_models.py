@@ -27,3 +27,4 @@ class LoginRequest(BaseModel):
 class LoginResponse(BaseModel):
     ok: bool
     token: str
+    user: UserPublic

@@ -63,5 +63,6 @@ async def login(body: LoginRequest):
 
     return LoginResponse(
         ok=True,
-        token=token
+        token=token,
+        user=UserPublic(name=user["name"], email=user["email"])
     )
