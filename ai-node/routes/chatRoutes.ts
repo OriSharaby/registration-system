@@ -4,17 +4,49 @@ import { generateChatReply } from "../services/openaiService";
 
 const router = Router();
 
+function isValidIsraeliMobile(phone: string): boolean {
+  return /^05\d{8}$/.test(phone);
+}
+
+function normalizeIsraeliPhoneNumber(phone: string): string | null {
+  const cleaned = phone.replace(/[^\d+]/g, "");
+
+  if (cleaned.startsWith("+972")) {
+    const local = "0" + cleaned.slice(4);
+
+    if (isValidIsraeliMobile(local)) {
+      return local;
+    }
+
+    return null;
+  }
+
+  if (isValidIsraeliMobile(cleaned)) {
+    return cleaned;
+  }
+
+  return null;
+}
+
+function extractIsraeliPhoneNumber(text: string): string | null {
+  const match = text.match(/(?:\+972|0)[\d\s-]{8,15}/);
+
+  if (!match) {
+    return null;
+  }
+
+  return normalizeIsraeliPhoneNumber(match[0]);
+}
+
 router.post("/start", async (req: Request, res: Response) => {
   try {
-    const { customerName, phoneNumber, channel } = req.body as {
-      customerName?: string;
-      phoneNumber?: string;
+    const { channel } = req.body as {
       channel?: "web" | "mobile";
     };
 
-    if (!customerName || !phoneNumber || !channel) {
+    if (!channel) {
       return res.status(400).json({
-        message: "customerName, phoneNumber, and channel are required",
+        message: "channel is required",
       });
     }
 
@@ -25,12 +57,13 @@ router.post("/start", async (req: Request, res: Response) => {
     }
 
     const greeting =
-      "שלום, אני העוזר של A.B Deliveries. אשמח לעזור לך עם שאלות על משלוחים וגם להציע שירותים מתאימים. איך אפשר לעזור?";
+      "שלום, אני העוזר של A.B Deliveries. לפני שנתחיל, אשמח אם תכתוב לי את השם שלך.";
 
     const conversation = await Conversation.create({
-      customerName: customerName.trim(),
-      phoneNumber: phoneNumber.trim(),
+      customerName: "Not provided yet",
+      phoneNumber: "Not provided yet",
       channel,
+      profileStep: "collecting_name",
       messages: [
         {
           role: "assistant",
@@ -73,11 +106,73 @@ router.post("/message", async (req: Request, res: Response) => {
       });
     }
 
+    const trimmedMessage = message.trim();
+
     conversation.messages.push({
       role: "user",
-      content: message.trim(),
+      content: trimmedMessage,
       timestamp: new Date(),
     });
+
+    if (conversation.profileStep === "collecting_name") {
+      conversation.customerName = trimmedMessage;
+      conversation.profileStep = "collecting_phone";
+
+      const reply = `תודה ${trimmedMessage}, עכשיו אשמח אם תכתוב לי את מספר הטלפון הישראלי שלך.`;
+
+      conversation.messages.push({
+        role: "assistant",
+        content: reply,
+        timestamp: new Date(),
+      });
+
+      await conversation.save();
+
+      return res.json({
+        reply,
+        messages: conversation.messages,
+      });
+    }
+
+    if (conversation.profileStep === "collecting_phone") {
+      const extractedPhone = extractIsraeliPhoneNumber(trimmedMessage);
+
+      if (!extractedPhone) {
+        const reply =
+          "לא הצלחתי לזהות מספר טלפון ישראלי תקין. אנא כתוב מספר טלפון נייד ישראלי בפורמט כמו 0501234567.";
+
+        conversation.messages.push({
+          role: "assistant",
+          content: reply,
+          timestamp: new Date(),
+        });
+
+        await conversation.save();
+
+        return res.json({
+          reply,
+          messages: conversation.messages,
+        });
+      }
+
+      conversation.phoneNumber = extractedPhone;
+      conversation.profileStep = "ready";
+
+      const reply = `מעולה, שמרתי את מספר הטלפון שלך: ${extractedPhone}. עכשיו אפשר להמשיך — איך אוכל לעזור לך לגבי המשלוח?`;
+
+      conversation.messages.push({
+        role: "assistant",
+        content: reply,
+        timestamp: new Date(),
+      });
+
+      await conversation.save();
+
+      return res.json({
+        reply,
+        messages: conversation.messages,
+      });
+    }
 
     const historyForAi = conversation.messages.map((msg) => ({
       role: msg.role as "user" | "assistant" | "system",

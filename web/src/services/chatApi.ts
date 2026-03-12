@@ -1,8 +1,6 @@
 const CHAT_API_BASE_URL = import.meta.env.VITE_AI_API_BASE_URL as string;
 
 export type StartChatPayload = {
-  customerName: string;
-  phoneNumber: string;
   channel: "web" | "mobile";
 };
 

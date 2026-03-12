@@ -66,7 +66,7 @@
   font-size: 14px;
 }
 
-.chat-start {
+.chat-loading {
   flex: 1;
   display: flex;
   align-items: center;
@@ -75,7 +75,7 @@
   background: #f7f8fc;
 }
 
-.chat-start__card {
+.chat-loading__card {
   width: 100%;
   max-width: 480px;
   background: var(--white);
@@ -83,76 +83,20 @@
   border-radius: 24px;
   box-shadow: 0 14px 35px rgba(87, 105, 212, 0.1);
   padding: 28px;
+  text-align: center;
 }
 
-.chat-start__title {
+.chat-loading__title {
   margin: 0 0 8px;
   color: var(--primary);
   font-size: 28px;
   font-weight: 700;
 }
 
-.chat-start__subtitle {
-  margin: 0 0 22px;
+.chat-loading__subtitle {
+  margin: 0;
   color: var(--muted);
   font-size: 15px;
-}
-
-.chat-start__form {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.chat-start__field label {
-  display: block;
-  margin-bottom: 8px;
-  color: #2f3553;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.chat-start__field input {
-  width: 100%;
-  height: 48px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--white);
-  color: #2f3553;
-  font-size: 14px;
-  padding: 0 14px;
-  outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.chat-start__field input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--focus-ring);
-}
-
-.chat-start__field input::placeholder {
-  color: var(--text-soft);
-}
-
-.chat-start__button {
-  height: 46px;
-  border: none;
-  border-radius: 999px;
-  background: var(--primary);
-  color: var(--white);
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.2s ease, opacity 0.2s ease;
-}
-
-.chat-start__button:hover {
-  background: var(--primary-hover);
-}
-
-.chat-start__button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
 }
 
 .chat-error {
@@ -299,7 +243,7 @@
     padding: 18px 22px;
   }
 
-  .chat-start {
+  .chat-loading {
     padding: 24px;
   }
 
@@ -324,11 +268,11 @@
     font-size: 22px;
   }
 
-  .chat-start {
+  .chat-loading {
     padding: 18px;
   }
 
-  .chat-start__card {
+  .chat-loading__card {
     padding: 22px;
     border-radius: 20px;
   }
@@ -374,7 +318,7 @@
     font-size: 13px;
   }
 
-  .chat-start__title {
+  .chat-loading__title {
     font-size: 24px;
   }
 

@@ -1,4 +1,4 @@
-import React, { useState, type SyntheticEvent } from "react";
+import React, { useEffect, useState } from "react";
 import {
   startChat,
   sendChatMessage,
@@ -6,50 +6,42 @@ import {
 } from "../services/chatApi";
 import "../styles/chat.css";
 import ChatHeader from "../components/chat/ChatHeader";
-import ChatStartForm from "../components/chat/ChatStartForm";
 import ChatMessageList from "../components/chat/ChatMessageList";
 import ChatComposer from "../components/chat/ChatComposer";
 
 export default function ChatPage() {
-  const [customerName, setCustomerName] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentMessage, setCurrentMessage] = useState("");
-  const [isStartingChat, setIsStartingChat] = useState(false);
+  const [isStartingChat, setIsStartingChat] = useState(true);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [error, setError] = useState("");
 
-  const handleStartChat = async (e: SyntheticEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    const initChat = async () => {
+      try {
+        setError("");
+        setIsStartingChat(true);
 
-    if (!customerName.trim() || !phoneNumber.trim()) {
-      setError("Please enter your name and phone number");
-      return;
-    }
+        const result = await startChat({
+          channel: "web",
+        });
 
-    setError("");
-    setIsStartingChat(true);
+        setConversationId(result.conversationId);
+        setMessages(result.messages);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Failed to start chat";
+        setError(message);
+      } finally {
+        setIsStartingChat(false);
+      }
+    };
 
-    try {
-      const result = await startChat({
-        customerName: customerName.trim(),
-        phoneNumber: phoneNumber.trim(),
-        channel: "web",
-      });
+    initChat();
+  }, []);
 
-      setConversationId(result.conversationId);
-      setMessages(result.messages);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to start chat";
-      setError(message);
-    } finally {
-      setIsStartingChat(false);
-    }
-  };
-
-  const handleSendMessage = async (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!conversationId || !currentMessage.trim()) return;
@@ -79,20 +71,19 @@ export default function ChatPage() {
       <div className="chat-shell">
         <ChatHeader />
 
-        {!conversationId ? (
-          <ChatStartForm
-            customerName={customerName}
-            phoneNumber={phoneNumber}
-            error={error}
-            isStartingChat={isStartingChat}
-            onCustomerNameChange={setCustomerName}
-            onPhoneNumberChange={setPhoneNumber}
-            onSubmit={handleStartChat}
-          />
+        {error && <div className="chat-error chat-error--chat">{error}</div>}
+
+        {isStartingChat ? (
+          <div className="chat-loading">
+            <div className="chat-loading__card">
+              <h2 className="chat-loading__title">Starting chat...</h2>
+              <p className="chat-loading__subtitle">
+                Please wait while we connect you to the assistant.
+              </p>
+            </div>
+          </div>
         ) : (
           <>
-            {error && <div className="chat-error chat-error--chat">{error}</div>}
-
             <ChatMessageList messages={messages} />
 
             <ChatComposer

@@ -1,9 +1,7 @@
 const CHAT_API_BASE_URL =
-  "https://registration-ai-ori-d2fwhsayfqbygah9.westeurope-01.azurewebsites.net";
+"https://registration-ai-ori-d2fwhsayfqbygah9.westeurope-01.azurewebsites.net";
 
 export type StartChatPayload = {
-  customerName: string;
-  phoneNumber: string;
   channel: "web" | "mobile";
 };
 
@@ -28,9 +26,15 @@ export type SendMessageResponse = {
   messages: ChatMessage[];
 };
 
-
 async function parseResponse(response: Response) {
-  const data = await response.json();
+  const contentType = response.headers.get("content-type") || "";
+  const rawText = await response.text();
+
+  if (!contentType.includes("application/json")) {
+    throw new Error("Chat server did not return JSON");
+  }
+
+  const data = JSON.parse(rawText);
 
   if (!response.ok) {
     throw new Error(data.message || data.detail || "Request failed");

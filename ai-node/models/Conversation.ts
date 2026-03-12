@@ -37,6 +37,12 @@ const conversationSchema = new mongoose.Schema(
       enum: ["web", "mobile"],
       required: true,
     },
+    profileStep: {
+      type: String,
+      enum: ["collecting_name", "collecting_phone", "ready"],
+      required: true,
+      default: "collecting_name",
+    },
     messages: {
       type: [messageSchema],
       default: [],

@@ -64,6 +64,10 @@ export default function LoginScreen({ navigation }: Props) {
         await AsyncStorage.setItem("token", result.token);
       }
 
+      if (result.user?.name) {
+        await AsyncStorage.setItem("userName", result.user.name);
+      }
+
       Toast.show({
         type: "success",
         text1: result.message || "Login successful!",
