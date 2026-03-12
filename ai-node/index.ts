@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import chatRoutes from "./routes/chatRoutes";
 import { generateToast } from "./services/openaiService";
+import { appendChatRow } from "./services/googleSheetsService";
 
 dotenv.config();
 
@@ -44,5 +45,26 @@ async function startServer(): Promise<void> {
     process.exit(1);
   }
 }
+
+app.get("/test-sheets", async (_req, res) => {
+  try {
+    await appendChatRow({
+      conversationId: "test-123",
+      customerName: "Ori",
+      phoneNumber: "0500000000",
+      channel: "web",
+      profileStep: "ready",
+      role: "assistant",
+      message: "בדיקת חיבור לגוגל שיטס",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    res.json({ ok: true });
+  } catch (error) {
+    console.error("Google Sheets test failed:", error);
+    res.status(500).json({ ok: false });
+  }
+});
 
 startServer();

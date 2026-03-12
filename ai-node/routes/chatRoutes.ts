@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { Conversation } from "../models/Conversation";
 import { generateChatReply } from "../services/openaiService";
+import { appendChatRow } from "../services/googleSheetsService";
 
 const router = Router();
 
@@ -38,7 +39,37 @@ function extractIsraeliPhoneNumber(text: string): string | null {
   return normalizeIsraeliPhoneNumber(match[0]);
 }
 
+function exportMessageToSheets(
+  conversation: any,
+  role: "user" | "assistant",
+  message: string,
+  timestamp: Date
+): void {
+  console.log("[Sheets] exporting message:", {
+    conversationId: conversation._id.toString(),
+    role,
+    message,
+  });
+
+  appendChatRow({
+    conversationId: conversation._id.toString(),
+    customerName: conversation.customerName,
+    phoneNumber: conversation.phoneNumber,
+    channel: conversation.channel,
+    profileStep: conversation.profileStep,
+    role,
+    message,
+    timestamp,
+    createdAt: conversation.createdAt,
+    updatedAt: conversation.updatedAt,
+  }).catch((error) => {
+    console.error(`Failed to export ${role} message to Google Sheets:`, error);
+  });
+}
+
 router.post("/start", async (req: Request, res: Response) => {
+  console.log("[POST /api/chat/start] body:", req.body);
+
   try {
     const { channel } = req.body as {
       channel?: "web" | "mobile";
@@ -59,6 +90,8 @@ router.post("/start", async (req: Request, res: Response) => {
     const greeting =
       "שלום, אני העוזר של A.B Deliveries. לפני שנתחיל, אשמח אם תכתוב לי את השם שלך.";
 
+    const greetingTimestamp = new Date();
+
     const conversation = await Conversation.create({
       customerName: "Not provided yet",
       phoneNumber: "Not provided yet",
@@ -68,10 +101,17 @@ router.post("/start", async (req: Request, res: Response) => {
         {
           role: "assistant",
           content: greeting,
-          timestamp: new Date(),
+          timestamp: greetingTimestamp,
         },
       ],
     });
+
+    exportMessageToSheets(
+      conversation,
+      "assistant",
+      greeting,
+      greetingTimestamp
+    );
 
     return res.status(201).json({
       conversationId: conversation._id,
@@ -86,6 +126,8 @@ router.post("/start", async (req: Request, res: Response) => {
 });
 
 router.post("/message", async (req: Request, res: Response) => {
+  console.log("[POST /api/chat/message] body:", req.body);
+
   try {
     const { conversationId, message } = req.body as {
       conversationId?: string;
@@ -107,11 +149,12 @@ router.post("/message", async (req: Request, res: Response) => {
     }
 
     const trimmedMessage = message.trim();
+    const userTimestamp = new Date();
 
     conversation.messages.push({
       role: "user",
       content: trimmedMessage,
-      timestamp: new Date(),
+      timestamp: userTimestamp,
     });
 
     if (conversation.profileStep === "collecting_name") {
@@ -119,14 +162,23 @@ router.post("/message", async (req: Request, res: Response) => {
       conversation.profileStep = "collecting_phone";
 
       const reply = `תודה ${trimmedMessage}, עכשיו אשמח אם תכתוב לי את מספר הטלפון הישראלי שלך.`;
+      const assistantTimestamp = new Date();
 
       conversation.messages.push({
         role: "assistant",
         content: reply,
-        timestamp: new Date(),
+        timestamp: assistantTimestamp,
       });
 
       await conversation.save();
+
+      exportMessageToSheets(conversation, "user", trimmedMessage, userTimestamp);
+      exportMessageToSheets(
+        conversation,
+        "assistant",
+        reply,
+        assistantTimestamp
+      );
 
       return res.json({
         reply,
@@ -140,14 +192,23 @@ router.post("/message", async (req: Request, res: Response) => {
       if (!extractedPhone) {
         const reply =
           "לא הצלחתי לזהות מספר טלפון ישראלי תקין. אנא כתוב מספר טלפון נייד ישראלי בפורמט כמו 0501234567.";
+        const assistantTimestamp = new Date();
 
         conversation.messages.push({
           role: "assistant",
           content: reply,
-          timestamp: new Date(),
+          timestamp: assistantTimestamp,
         });
 
         await conversation.save();
+
+        exportMessageToSheets(conversation, "user", trimmedMessage, userTimestamp);
+        exportMessageToSheets(
+          conversation,
+          "assistant",
+          reply,
+          assistantTimestamp
+        );
 
         return res.json({
           reply,
@@ -159,14 +220,23 @@ router.post("/message", async (req: Request, res: Response) => {
       conversation.profileStep = "ready";
 
       const reply = `מעולה, שמרתי את מספר הטלפון שלך: ${extractedPhone}. עכשיו אפשר להמשיך — איך אוכל לעזור לך לגבי המשלוח?`;
+      const assistantTimestamp = new Date();
 
       conversation.messages.push({
         role: "assistant",
         content: reply,
-        timestamp: new Date(),
+        timestamp: assistantTimestamp,
       });
 
       await conversation.save();
+
+      exportMessageToSheets(conversation, "user", trimmedMessage, userTimestamp);
+      exportMessageToSheets(
+        conversation,
+        "assistant",
+        reply,
+        assistantTimestamp
+      );
 
       return res.json({
         reply,
@@ -180,14 +250,18 @@ router.post("/message", async (req: Request, res: Response) => {
     }));
 
     const reply = await generateChatReply(historyForAi);
+    const assistantTimestamp = new Date();
 
     conversation.messages.push({
       role: "assistant",
       content: reply,
-      timestamp: new Date(),
+      timestamp: assistantTimestamp,
     });
 
     await conversation.save();
+
+    exportMessageToSheets(conversation, "user", trimmedMessage, userTimestamp);
+    exportMessageToSheets(conversation, "assistant", reply, assistantTimestamp);
 
     return res.json({
       reply,

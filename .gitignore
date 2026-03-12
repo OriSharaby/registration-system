@@ -29,3 +29,4 @@ Thumbs.db
 .idea/
 
 test_db.py
+google-credentials.json
