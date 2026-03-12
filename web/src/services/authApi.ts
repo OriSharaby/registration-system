@@ -23,15 +23,38 @@ export type AuthResponse = {
     };
 };
 
+type FastAPIValidationError = {
+  type: string;
+  loc: (string | number)[];
+  msg: string;
+  input?: unknown;
+  ctx?: Record<string, unknown>;
+};
+
+type ErrorResponse = {
+  detail?: string | FastAPIValidationError[];
+  message?: string;
+};
 
 async function parseResponse(response: Response) {
-    const data = await response.json();
+  const data: ErrorResponse = await response.json();
 
-    if (!response.ok) {
-        throw new Error(data.detail || data.message || "Request failed");
+  if (!response.ok) {
+    if (Array.isArray(data.detail)) {
+      const message = data.detail
+        .map((err) => {
+          const field = err.loc?.[err.loc.length - 1];
+          return field ? `${field}: ${err.msg}` : err.msg;
+        })
+        .join(", ");
+
+      throw new Error(message);
     }
 
-    return data;
+    throw new Error(data.detail || data.message || "Request failed");
+  }
+
+  return data;
 }
 
 export async function registerUser(

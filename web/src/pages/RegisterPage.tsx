@@ -63,9 +63,6 @@ export default function RegisterPage() {
         password: formData.password,
       });
 
-      console.log("after registerUser", result);
-
-
       if (result.token) {
         localStorage.setItem("token", result.token);
       }
