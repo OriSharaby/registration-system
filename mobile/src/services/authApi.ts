@@ -1,5 +1,4 @@
-const API_BASE_URL =
-  "https://registration-api-cshcbxfrfjfhdaha.westeurope-01.azurewebsites.net";
+const API_BASE_URL = process.env.API_BASE_URL;
 
 export type RegisterPayload = {
   name: string;
@@ -23,14 +22,45 @@ export type AuthResponse = {
   };
 };
 
+type FastAPIValidationError = {
+  type: string;
+  loc: (string | number)[];
+  msg: string;
+  input?: unknown;
+  ctx?: Record<string, unknown>;
+};
+
+type AuthErrorResponse = {
+  detail?: string | FastAPIValidationError[];
+  message?: string;
+};
 
 async function parseResponse(response: Response): Promise<AuthResponse> {
-  const data = await response.json().catch(() => ({}));
+  const data: AuthResponse | AuthErrorResponse = await response
+    .json()
+    .catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(
-      (data as any).detail || (data as any).message || "Request failed"
-    );
+    if ("detail" in data && Array.isArray(data.detail)) {
+      const message = data.detail
+        .map((err) => {
+          const field = err.loc[err.loc.length - 1];
+          return `${String(field)}: ${err.msg}`;
+        })
+        .join(", ");
+
+      throw new Error(message || "Request failed");
+    }
+
+    if ("detail" in data && typeof data.detail === "string") {
+      throw new Error(data.detail);
+    }
+
+    if ("message" in data && typeof data.message === "string") {
+      throw new Error(data.message);
+    }
+
+    throw new Error("Request failed");
   }
 
   return data as AuthResponse;

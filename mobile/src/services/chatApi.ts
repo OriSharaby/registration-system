@@ -1,6 +1,6 @@
 const CHAT_API_BASE_URL =
-"https://registration-ai-ori-d2fwhsayfqbygah9.westeurope-01.azurewebsites.net";
-
+  process.env.EXPO_PUBLIC_CHAT_API_BASE_URL ?? "http://localhost:4001";
+  
 export type StartChatPayload = {
   channel: "web" | "mobile";
 };

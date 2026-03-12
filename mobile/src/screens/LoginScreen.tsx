@@ -70,7 +70,7 @@ export default function LoginScreen({ navigation }: Props) {
 
       Toast.show({
         type: "success",
-        text1: result.message || "Login successful!",
+        text1: "Login successful!",
       });
 
       navigation.navigate("Chat");
