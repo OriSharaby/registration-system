@@ -1,10 +1,10 @@
-import  { type SyntheticEvent } from "react";
+import React from "react";
 
 type Props = {
   currentMessage: string;
   isSendingMessage: boolean;
   onMessageChange: (value: string) => void;
-  onSubmit: (e: SyntheticEvent) => void;
+  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 };
 
 export default function ChatComposer({

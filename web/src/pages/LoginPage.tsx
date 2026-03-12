@@ -59,6 +59,10 @@ export default function LoginPage() {
         localStorage.setItem("token", result.token);
       }
 
+      if (result.user?.name) {
+        localStorage.setItem("userName", result.user.name);
+      }
+      
       toast.success(result.message || "Login successful!");
       navigate("/chat");
     } catch (err: unknown) {

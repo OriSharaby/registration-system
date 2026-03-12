@@ -18,7 +18,6 @@ export type AuthResponse = {
   token?: string;
   toast?: string;
   user?: {
-    id: string;
     name: string;
     email: string;
   };
