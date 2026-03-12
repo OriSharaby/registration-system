@@ -24,12 +24,12 @@ const conversationSchema = new mongoose.Schema(
   {
     customerName: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
     },
     phoneNumber: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
     },
     channel: {
