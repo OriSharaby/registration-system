@@ -321,32 +321,34 @@ function extractIsraeliPhoneNumber(text: string): string | null {
   return normalizeIsraeliPhoneNumber(match[0]);
 }
 
-function exportMessageToSheets(
+async function exportMessageToSheets(
   conversation: any,
   role: "user" | "assistant",
   message: string,
   timestamp: Date
-): void {
+) {
   console.log("[Sheets] exporting message:", {
     conversationId: conversation._id.toString(),
     role,
     message,
   });
 
-  appendChatRow({
-    conversationId: conversation._id.toString(),
-    customerName: conversation.customerName,
-    phoneNumber: conversation.phoneNumber,
-    channel: conversation.channel,
-    profileStep: conversation.profileStep,
-    role,
-    message,
-    timestamp,
-    createdAt: conversation.createdAt,
-    updatedAt: conversation.updatedAt,
-  }).catch((error) => {
+  try {
+    await appendChatRow({
+      conversationId: conversation._id.toString(),
+      customerName: conversation.customerName,
+      phoneNumber: conversation.phoneNumber,
+      channel: conversation.channel,
+      profileStep: conversation.profileStep,
+      role,
+      message,
+      timestamp,
+      createdAt: conversation.createdAt,
+      updatedAt: conversation.updatedAt,
+    })
+  } catch (error) {
     console.error(`Failed to export ${role} message to Google Sheets:`, error);
-  });
+  }
 }
 
 router.post("/start", async (req: Request, res: Response) => {
@@ -388,7 +390,7 @@ router.post("/start", async (req: Request, res: Response) => {
       ],
     });
 
-    exportMessageToSheets(
+    await exportMessageToSheets(
       conversation,
       "assistant",
       greeting,
@@ -454,19 +456,17 @@ router.post("/message", async (req: Request, res: Response) => {
 
       await conversation.save();
 
-      exportMessageToSheets(conversation, "user", trimmedMessage, userTimestamp);
-      exportMessageToSheets(
+      await updateConversationRows(conversation._id.toString(), {
+        customerName: trimmedMessage,
+        profileStep: "collecting_phone",
+      })
+
+      await exportMessageToSheets(conversation, "user", trimmedMessage, userTimestamp);
+      await exportMessageToSheets(
         conversation,
         "assistant",
         reply,
         assistantTimestamp
-      );
-
-      updateConversationRows(conversation._id.toString(), {
-        customerName: trimmedMessage,
-        profileStep: "collecting_phone",
-      }).catch((err) =>
-        console.error("[Sheets] Failed to update name rows:", err)
       );
 
       return res.json({
@@ -491,8 +491,8 @@ router.post("/message", async (req: Request, res: Response) => {
 
         await conversation.save();
 
-        exportMessageToSheets(conversation, "user", trimmedMessage, userTimestamp);
-        exportMessageToSheets(
+        await exportMessageToSheets(conversation, "user", trimmedMessage, userTimestamp);
+        await exportMessageToSheets(
           conversation,
           "assistant",
           reply,
@@ -519,20 +519,18 @@ router.post("/message", async (req: Request, res: Response) => {
 
       await conversation.save();
 
-      exportMessageToSheets(conversation, "user", trimmedMessage, userTimestamp);
-      exportMessageToSheets(
+      await exportMessageToSheets(conversation, "user", trimmedMessage, userTimestamp);
+      await exportMessageToSheets(
         conversation,
         "assistant",
         reply,
         assistantTimestamp
       );
 
-      updateConversationRows(conversation._id.toString(), {
+      await updateConversationRows(conversation._id.toString(), {
         phoneNumber: extractedPhone,
         profileStep: "ready",
-      }).catch((err) =>
-        console.error("[Sheets] Failed to update phone rows:", err)
-      );
+      })
 
       return res.json({
         reply,
@@ -556,8 +554,8 @@ router.post("/message", async (req: Request, res: Response) => {
 
     await conversation.save();
 
-    exportMessageToSheets(conversation, "user", trimmedMessage, userTimestamp);
-    exportMessageToSheets(conversation, "assistant", reply, assistantTimestamp);
+    await exportMessageToSheets(conversation, "user", trimmedMessage, userTimestamp);
+    await exportMessageToSheets(conversation, "assistant", reply, assistantTimestamp);
 
     return res.json({
       reply,
